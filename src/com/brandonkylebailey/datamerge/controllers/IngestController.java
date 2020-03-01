@@ -177,6 +177,28 @@ public class IngestController {
         csvPrinter.close();
     }
 
+    private void sortOutputFile() throws IOException {
+
+        String field = "request-time";
+
+        Reader reader = Files.newBufferedReader(Paths.get(Constants.OUTPUT_PATH));
+        CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withHeader());
+
+        ArrayList<CSVRecord> csvRecordsList = new ArrayList<>();
+        for (CSVRecord csvRecord: csvParser) { csvRecordsList.add(csvRecord); }
+
+        Comparator<CSVRecord> comparator = (op1, op2) -> String.valueOf(op2.get(field)).compareTo(String.valueOf(op1.get(field)));
+        csvRecordsList.sort(comparator);
+
+        // add each record from the input csv file to the output csv file.
+        BufferedWriter writer = Files.newBufferedWriter(Paths.get(Constants.OUTPUT_PATH));
+        // create csv printer for writing of records to output file. Provide header as header.
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
+        csvPrinter.printRecords(csvRecordsList);
+        csvPrinter.flush();
+        csvPrinter.close();
+    }
+
     public void processData() throws IOException, ParseException, ParserConfigurationException, SAXException {
         processCsvFile();
         System.out.println("Csv file processed.");
@@ -184,5 +206,7 @@ public class IngestController {
         System.out.println("Json file processed.");
         processXmlFile();
         System.out.println("Xml file processed.");
+        sortOutputFile();
+        System.out.println("Output csv file sorted.");
     }
 }
