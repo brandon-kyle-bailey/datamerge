@@ -19,6 +19,7 @@ public class Main {
 
         resourceManager.prepareResources();
         ingestController.processData();
+        ingestController.generateServiceGuidReport();
 
     }
 

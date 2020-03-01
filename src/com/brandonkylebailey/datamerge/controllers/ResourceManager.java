@@ -36,5 +36,6 @@ public class ResourceManager {
             throw new FileNotFoundException();
         }
         createNewFile(Constants.OUTPUT_PATH);
+        createNewFile(Constants.SERVICE_REPORT_PATH);
     }
 }

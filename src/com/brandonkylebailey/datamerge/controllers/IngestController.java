@@ -23,7 +23,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -35,6 +34,7 @@ import java.util.*;
 public class IngestController {
 
     private String[] header;
+    private ArrayList<CSVRecord> csvRecordsList;
 
     private void processCsvFile() throws IOException {
 
@@ -102,7 +102,6 @@ public class IngestController {
             if((((Long)report.get("packets-serviced")).intValue() != 0)) {
                 // append each column in the same order as the corresponding header.
                 for (String column : header) {
-                    // TODO... convert time for "request-time" from milliseconds to valid string representation.
                     if(column.toString().equals("request-time")) {
                         // convert milliseconds to date object
                         long milliseconds = (long) report.get(column);
@@ -184,7 +183,7 @@ public class IngestController {
         Reader reader = Files.newBufferedReader(Paths.get(Constants.OUTPUT_PATH));
         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withHeader());
 
-        ArrayList<CSVRecord> csvRecordsList = new ArrayList<>();
+        csvRecordsList = new ArrayList<>();
         for (CSVRecord csvRecord: csvParser) { csvRecordsList.add(csvRecord); }
 
         Comparator<CSVRecord> comparator = (op1, op2) -> String.valueOf(op2.get(field)).compareTo(String.valueOf(op1.get(field)));
@@ -197,6 +196,40 @@ public class IngestController {
         csvPrinter.printRecords(csvRecordsList);
         csvPrinter.flush();
         csvPrinter.close();
+    }
+
+    public void generateServiceGuidReport() throws IOException {
+
+        String column = "service-guid";
+
+        // Create treeMap to store "service-guid" reports per each guid as value.
+        TreeMap<String, Integer> serviceGuidSummaries = new TreeMap<>();
+
+        // Process each report.
+        for (CSVRecord record : csvRecordsList) {
+            // If the "service-guid" has been already inserted in the treeMap, update it value.
+            if (serviceGuidSummaries.containsKey(record.get(column))) {
+                int prevValue = serviceGuidSummaries.get(record.get(column));
+                serviceGuidSummaries.put(record.get(column), prevValue + 1);
+            }
+            // If the "service-guid" has never been in the treeMap, insert with value 1.
+            else {
+                serviceGuidSummaries.put(record.get(column), 1);
+            }
+        }
+
+        BufferedWriter writer = Files.newBufferedWriter(Paths.get(Constants.SERVICE_REPORT_PATH));
+
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(column, "reports"));
+
+        for (String key: serviceGuidSummaries.keySet()) {
+            // Print record in output file and flush.
+            csvPrinter.printRecord(key, serviceGuidSummaries.get(key));
+            csvPrinter.flush();
+        }
+        // Close printer.
+        csvPrinter.close();
+
     }
 
     public void processData() throws IOException, ParseException, ParserConfigurationException, SAXException {
