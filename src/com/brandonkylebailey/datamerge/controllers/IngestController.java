@@ -23,11 +23,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
 public class IngestController {
@@ -39,23 +41,28 @@ public class IngestController {
         // create buffer reader from input csv file.
         Reader reader = Files.newBufferedReader(Paths.get(Constants.CSV_PATH));
 
-        // add each record from the input csv file to the output csv file.
-        BufferedWriter writer = Files.newBufferedWriter(Paths.get(Constants.OUTPUT_PATH));
-
         // create csv parser with headers set.
         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader());
 
+        // add each record from the input csv file to the output csv file.
+        BufferedWriter writer = Files.newBufferedWriter(Paths.get(Constants.OUTPUT_PATH));
+
         // get headers for later use.
-        header = Arrays.copyOf(csvParser.getHeaderMap().keySet().toArray(), csvParser.getHeaderMap().keySet().toArray().length, String[].class);
+        header = Arrays.copyOf(csvParser.getHeaderMap().keySet().toArray(),
+                csvParser.getHeaderMap().keySet().toArray().length,
+                String[].class);
 
         // create csv printer for writing of records to output file. Provide header as header.
         CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(header));
 
         // loop through records and filter non zero "packets-serviced" records.
         for (CSVRecord record : csvParser) {
-         if(!(Integer.parseInt(record.get("packets-serviced")) == 0)) {
-             csvPrinter.printRecord(record.toMap().values());
-             csvPrinter.flush();
+            if((Integer.parseInt(record.get("packets-serviced")) != 0)) {
+                // TODO... is there a more efficient way to generate this list?
+                ArrayList<String> row = new ArrayList<>();
+                record.forEach(row::add);
+                csvPrinter.printRecord(row);
+                csvPrinter.flush();
          }
         }
 
@@ -92,13 +99,25 @@ public class IngestController {
             ArrayList<String> row = new ArrayList<>();
 
             // filter non zero packets serviced records.
-            if(!(((Long)report.get("packets-serviced")).intValue() == 0)) {
+            if((((Long)report.get("packets-serviced")).intValue() != 0)) {
                 // append each column in the same order as the corresponding header.
                 for (String column : header) {
                     // TODO... convert time for "request-time" from milliseconds to valid string representation.
-                    row.add(report.get(column).toString());
-                }
+                    if(column.toString().equals("request-time")) {
+                        // convert milliseconds to date object
+                        long milliseconds = (long) report.get(column);
 
+                        // generate Atlantic Standard Time zone.
+                        TimeZone astTimeZone = TimeZone.getTimeZone("Canada/Atlantic");
+                        DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+                        dateTimeFormat.setTimeZone(astTimeZone);
+
+                        Date result = new Date(milliseconds);
+                        row.add(dateTimeFormat.format(result));
+                    } else {
+                        row.add(report.get(column).toString());
+                    }
+                }
                 // add row to csv file.
                 csvPrinter.printRecord(row);
                 csvPrinter.flush();

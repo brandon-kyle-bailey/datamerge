@@ -10,6 +10,7 @@ import java.io.IOException;
 public class ResourceManager {
 
     private boolean inputFileExists(String inputFile) {
+
         return new File(inputFile).exists();
     }
 
