@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 
-public class ResourceManager {
+public class ResourceController {
 
     /**
      * Boolean method that checks if given file exists or not.
@@ -52,3 +52,4 @@ public class ResourceManager {
         }
     }
 }
+
