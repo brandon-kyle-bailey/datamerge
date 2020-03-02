@@ -4,38 +4,51 @@ package com.brandonkylebailey.datamerge.controllers;
 import com.brandonkylebailey.datamerge.models.Constants;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+
 
 public class ResourceManager {
 
-    private boolean inputFileExists(String inputFile) {
-
-        return new File(inputFile).exists();
+    /**
+     * Boolean method that checks if given file exists or not.
+     * @param inputFilePathString Input file's path.
+     * @return true if file exists, false if not.
+     */
+    private boolean givenFileExists(String inputFilePathString) {
+        return new File(inputFilePathString).exists();
     }
 
-    private void createNewFile(String inputFile) {
-        if(!inputFileExists(inputFile)) {
-            File file = new File(inputFile);
-            try {
-                if (file.createNewFile()){
-                    System.out.println("Output file created successfully.");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+    /**
+     * Tries to create a new file. Catches IOException if exception is thrown.
+     * @param inputFilePathString Input file's path.
+     */
+    public void createNewFile(String inputFilePathString) {
+
+        // Initialize File using input string.
+        File newFile = new File(inputFilePathString);
+
+        // try to make the new file in the location, catch IOException and print stack trace if raised.
+        try {
+            if(newFile.createNewFile()) {
+                System.out.println(String.format("File: %s created successfully.", inputFilePathString));
+            } else {
+                System.out.println(String.format("File: %s was not created.", inputFilePathString));
             }
-        } else {
-            System.out.println("Output file already exists.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public void prepareResources() throws FileNotFoundException {
+    /**
+     * Boolean method to check if all input files exist.
+     * @return true if files exist, false if not.
+     */
+    public Boolean resourceFilesExist() {
 
-        // check each file exists
-        if(!inputFileExists(Constants.CSV_PATH) || !inputFileExists(Constants.JSON_PATH) || !inputFileExists(Constants.XML_PATH)) {
-            throw new FileNotFoundException();
+        if(givenFileExists(Constants.CSV_PATH) && givenFileExists(Constants.JSON_PATH) && givenFileExists(Constants.XML_PATH)) {
+            return true;
+        } else {
+            return false;
         }
-        createNewFile(Constants.OUTPUT_PATH);
-        createNewFile(Constants.SERVICE_REPORT_PATH);
     }
 }
